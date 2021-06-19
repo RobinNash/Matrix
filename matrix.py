@@ -16,7 +16,7 @@ they can simply pass "R1 + 3*R2" into M.rowop() and the string will be given mea
 from fractions import Fraction as Frac
 from math import *
 
-# Some math functions for convenience
+# Some math functions for returning values in degrees
 def dcos(x): return cos(radians(x))
 def dtan(x): return tan(radians(x))
 def dsin(x): return sin(radians(x))
@@ -42,6 +42,7 @@ class Matrix(list):
     
     def __repr__(self):
         return str([[str(c) for c in row] for row in self]).replace("'",'')
+
     def __add__(self, matrix):
         '''Return self + matrix'''
         if not self.is_same_size(matrix): raise ValueError("Matrices not of compatable size")
@@ -49,12 +50,14 @@ class Matrix(list):
     def __radd__(self, matrix):
         '''Return matrix + self'''
         return matrix.__add__(self)
+
     def __neg__(self):
         '''Return self where each element is negated'''
         return Matrix([Matrix([-x for x in row]) for row in self])
     def __sub__(self, matrix):
         '''Return self - matrix'''
         return self + -matrix
+
     def __rsub__(self,matrix):
         '''Return matrix - self'''
         return matrix - self
@@ -66,18 +69,19 @@ class Matrix(list):
         r2,n = value.mn()
         if r != r2: raise ValueError("Matrices of incompatable sizes")
         return Matrix([Matrix([sum([self[i][t]*value[t][j] for t in range(r)]) for j in range(n)]) for i in range(m)])
-    
     def __rmul__(self, value):
         '''return value*self (value can be matrix or constant)'''
         if isinstance(value,(int,Frac)):
             return Matrix([Matrix([x*value for x in row]) for row in self])
         return value.__mul__(self)
+
     def __floordiv__(self, value):
-        '''Return self where each element x is x//value'''
+        '''Return self where each element x is x//value, value is int or Fraction'''
         return Matrix([Matrix([x//value for x in row]) for row in self])
     def __div__(self, value):
-        '''Return self where each element x is x/value'''
+        '''Return self where each element x is x/value, value is a constant'''
         return Matrix([Matrix([x/value for x in row]) for row in self])
+
     def __pow__(self, value):
         '''Return self**value'''
         # if value is less than 0, we have to invert first, but we'll worry about this later
@@ -95,6 +99,7 @@ class Matrix(list):
         ''' Return a 2 level copy of self'''
         return Matrix([Matrix([x for x in row]) for row in self])
     def is_same_size(self, matrix):
+	'''return if self has the same number of rows and columns as matrix'''
         return self.mn() == matrix.mn()
     def mn(self):
         '''Return (row,columns) of self'''
@@ -116,7 +121,7 @@ class Matrix(list):
         m,n = self.mn()
         return Matrix([[self[r][col] if r != target else self[r1][col]+c*self[r2][col] for col in range(n) ] for r in range(m)])
     def row_op(self,opst):
-        '''return matrix with row operation object opst applied to self'''
+        '''return matrix with row operation object or string opst applied to self'''
         opst = RowOp(str(opst))
         if opst.op == 0: return self.mul(opst.r1,opst.c)
         if opst.op == 1: return self.switch(opst.r1,opst.r2)
@@ -199,10 +204,8 @@ class Matrix(list):
         return Matrix([[self.C(j,i) for j in range(n)] for i in range(m)])
 
     def inverse(self):
+	'''return the inverse matrix of self if it exists'''
         return Frac(1,self.det()) * self.adj()
-
-    def __divmod__(self,value):
-        return 5
 
 
 def I(n):
@@ -355,23 +358,6 @@ if __name__ == "__main__":
 ##    angle = v.angle(u)
 ##    print(angle)
 
-    
-
-##    A = Matrix( [[2,9,5],[-1,-1,0],[2,4,3]])
-##    print(A.det())
-##    print(A.adj())
-##    print(A.inverse())
-##    print(A*A.inverse())
-##    Ai = Matrix([[3,-5,-5],[-3,4,5],[2,-2,-3]])
-##    print(A*Ai)
-##    print(A.inverse().det())
-##    print(A.adj().det())
-##    L1, L2 = [1,2,3], [1,3,2]
-##    print(L1+L2)
-##    l = list((1,2,3))
-##    M1,M2 = Matrix([L1]), Matrix([L2])
-##    print(M1+M2)
-    
 
 ##
 ##    optests = ["R2-3/2R3","R2sR3","R2*-3/4"]
