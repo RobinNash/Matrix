@@ -27,9 +27,12 @@ def datan(x): return degrees(atan(x))
 
 
 class Matrix(list):
-	'''2D matrix object
-	implements matrix operations
-	'''
+    '''2D matrix object
+    simplements matrix operations and functions
+    Matrix can be initialized by passing a 2D array
+    or a string of form "a b c\nd e f" where a-c are entries of
+    first row and d-f are entries of second row
+    '''
     def __init__(self,matrix):
         super().__init__(matrix)
         # make each row a Matrix
@@ -204,8 +207,12 @@ class Matrix(list):
         return Matrix([[self.C(j,i) for j in range(n)] for i in range(m)])
 
     def inverse(self):
-	'''return the inverse matrix of self if it exists'''
+		'''return the inverse matrix of self if it exists'''
         return Frac(1,self.det()) * self.adj()
+
+    def TA(self, x):
+        '''return Matrix transformation of self*x'''
+        return self*x
 
 
 def I(n):
@@ -221,7 +228,6 @@ def Elementary(n, op, row_op_tuple):
     rows to be interchanged  (r1,r2)
     - 2: a row number, a constant, then another row number to
     add constant * second row to first (r1,c,r2)  r1 <- r1 + c*r2'''
-##    super().__init__()
     if str(op) in 'msa': op = 'msa'.find(op)
     a,b,c = (row_op_tuple+(0,))[:3]
     if op == 0:
