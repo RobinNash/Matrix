@@ -111,34 +111,43 @@ class Matrix(list):
         '''Return (row,columns) of self'''
         return len(self),len(self[0])
     
+    def remove_col(self,c):
+        '''return self with column c removed'''
+        return Matrix([[self[r][i] for i in range(self.n) if i != c] for r in range(self.m)])
+    def remove_row(self,r):
+        '''return self with row r removed'''
+        return Matrix([self[i] for i in range(self.m) if i != r])
+    
     # Row operations
-    def mul(self,target,c):
-        '''target <- c*target'''
-        M = self.copy()
-        M[target] = [c*a for a in M[target]]
-        return M
-    def switch(self,r1,r2):
+    def swap(self,r1,r2):
         '''r1 <-> r2'''
         M = self.copy()
         M[r1],M[r2] = M[r2],M[r1]
         return M
-    def add(self,target,r1,r2,c = 1):
-        '''target <- r1 + c*r2'''
+    def scale(self,r1,c):
+        '''r1 <- c*r1'''
+        M = self.copy()
+        M[r1] = c*M[r1]
+        return M
+    def pivot(self,r1,r2,c = 1):
+        '''r1 <- r1 + c*r2'''
         m,n = self.mn()
-        return Matrix([[self[r][col] if r != target else self[r1][col]+c*self[r2][col] for col in range(n) ] for r in range(m)])
+        M = self.copy()
+        M[r1] = M[r1]+c*M[r2]
+        return M
     def row_op(self,opst):
         '''return matrix with row operation object or string opst applied to self'''
         opst = RowOp(str(opst))
-        if opst.op == 0: return self.mul(opst.r1,opst.c)
-        if opst.op == 1: return self.switch(opst.r1,opst.r2)
-        if opst.op == 2: return self.add(opst.r1,opst.r1,opst.r2,opst.c)
+        if opst.op == 0: return self.swap(opst.r1,opst.r2)
+        if opst.op == 1: return self.scale(opst.r1,opst.c)
+        if opst.op == 2: return self.pivot(opst.r1,opst.r2,opst.c)
         
     def T(self):
         '''Return transpose of self'''
-        return Matrix([Matrix([self[j][i] for j in range(len(self))]) for i in range(len(self[0]))])
+        return Matrix([[self[j][i] for j in range(len(self))] for i in range(len(self[0]))])
 
-    def REF(self):
-        '''Return self in row echelon form'''
+    def REF(self, get_row_ops = False, show_steps = False):
+        '''Return self in a row echelon form'''
         # Sort rows by least amount of leading zeros
         def leading_zeros(row,n):
             return n if row==[] or row[0]!=0 else leading_zeros(row[1:],n+1)
@@ -153,31 +162,36 @@ class Matrix(list):
                 break
             # Transform row so lead is 1
             if M[r][lead] != 1:
-                M = M.mul(r,Frac(1,M[r][lead]))
+                M = M.scale(r,Frac(1,M[r][lead]))
             # Remove entries below
             for r2 in range(r+1,M.m):
                 if M[r2][lead] == 0:
                     break
                 lead2 = leading_zeros(M[r2],0)
                 M[r2][lead2]
-                M = M.add(r2,r2,r,-M[r2][lead2])
+                M = M.pivot(r2,r,-M[r2][lead2])
+            #print some steps
+            if show_steps: M.print()
             # Sort the below by leading zeros again
             M = get_sort(M,r+1)
 
         return M
 
-    def RREF(self):
+    def RREF(self, show_steps = False):
         '''return self in reduced row echelon form'''
         def leading_zeros(row,n):
             return n if row==[] or row[0]!=0 else leading_zeros(row[1:],n+1)
         # put it in REF
-        M = self.REF()
+        M = self.REF(show_steps=show_steps)
+        
         leads = [leading_zeros(row,0) for row in M]
         for r in range(M.m):
             for c in range(leads[r]+1,M.n):
                 if c in leads:
                     r2 = leads.index(c)
-                    M = M.add(r,r,r2, Frac(-M[r][c],M[r2][c]))
+                    M = M.pivot(r,r2, Frac(-M[r][c],M[r2][c]))
+            #print some steps
+            if show_steps: M.print()
         return M
         
         
@@ -189,7 +203,7 @@ class Matrix(list):
         '''Return determinant of self if self is square'''
         m,n = self.mn()
         if n!=m:
-            raise ValueError("Matrix not sqaure")
+            raise ValueError("This Matrix is not sqaure")
         if n == 1:
             return self[0][0]
         if n == 2:
@@ -197,91 +211,92 @@ class Matrix(list):
         # row expansion
         return sum([self[0][j]*self.C(0,j) for j in range(n)])
     def M(self,i,j):
-        '''return the det of the matrix of self with row i and col j removed'''
-        m,n = self.mn()
-        return Matrix([[self[ii][jj] for jj in range(n) if jj != j] for ii in range(m) if ii!=i]).det()
+        '''return the Minor of self at i,j(i.e. det of the matrix of self with row i and col j removed)'''
+        return Matrix([[self[ii][jj] for jj in range(self.n) if jj != j] for ii in range(self.m) if ii!=i]).det()
     def C(self,i,j):
         '''return the cofactor of self at i,j'''
         return (-1)**(i+j)*self.M(i,j)
 
     def adj(self):
         '''return the adjoint matrix of self'''
-        m,n = self.mn()
-        return Matrix([[self.C(j,i) for j in range(n)] for i in range(m)])
+        return Matrix([[self.C(j,i) for j in range(self.n)] for i in range(self.m)])
 
     def inverse(self):
-		'''return the inverse matrix of self if it exists'''
+        '''return the inverse matrix of self if it exists'''
         return Frac(1,self.det()) * self.adj()
 
     def TA(self, x):
-        '''return Matrix transformation of self*x'''
-        return self*x
-
+        '''return Matrix transformation of self*x where x is a Vector'''
+        return self*x.col()
 
 def I(n):
 	'''Return an n x n identity matrix'''
     return Matrix([[(1 if i==j else 0) for j in range(n)  ] for i in range(n)])
     
-def Elementary(n, op, row_op_tuple):
-    '''row is row number (from 0) for op to be performed on.
-    op is op number 0-2 or 'm','s','a'
-    row op tuple contains either:
-    - 0: a target row, then an int or frac to multiply that row by (r1,c),
-    - 1: a row number then another row number to indicate these
-    rows to be interchanged  (r1,r2)
-    - 2: a row number, a constant, then another row number to
-    add constant * second row to first (r1,c,r2)  r1 <- r1 + c*r2'''
-    if str(op) in 'msa': op = 'msa'.find(op)
-    a,b,c = (row_op_tuple+(0,))[:3]
-    if op == 0:
-        self = I(n).mul(a,b)
-    if op == 1:
-        self = I(n).switch(a,b)
-    if op == 2:
-        self = I(n).add(a,a,c,b)
-    return self
-          
-El = Elementary
 
-def Elementary2(n, op, a, b, c = 1):
-    '''row is row number (from 1) for op to be performed on.
-    op is op number 0-2 or 'm','s','a'
-    row op tuple contains either: (r1,c), (r1,r2), (r1,r2,c)  r1 <- r1 + c*r2'''
-    if str(op) in 'msa': op = 'msa'.find(op)
-    a-=1
-    b-=1
+def Elementary(n, op, *args):
+    ''' Return elementary matrix where a row operation
+	is performed on the identity matrix of size n.
+	row is row number (from 1) for op to be performed on.
+    op is op number 0-2 or 's','m','p'
+    args following op contains either:
+    0/'s' (r1,r2)   : r1 <-> r2
+    1/'m' (r1,c)    : r1 <- r1*c
+    2/'p' (r1,r2,c) : r1 <- r1 + c*r2'''
+    if str(op) in 'smp': op = 'smp'.find(op)
     if op == 0:
-        self = I(n).mul(a,b+1) # b is constant not row in this case
+        self = I(n).swap(*args[:2]) # b is constant not row in this case
     if op == 1:
-        self = I(n).switch(a,b)
+        self = I(n).scale(*args[:2])
     if op == 2:
-        self = I(n).add(a,a,b,c)
+        self = I(n).pivot(*args)
     return self
-E2 = Elementary2
 
-def Elementary3(n, opst):
-    '''opst is row op string. ex "R2*-3", "R2sR3", "R2 - 3/2R3". no spaces necessary'''
+def ElementaryOpst(n, opst):
+    '''Return elementary matrix where a row operation
+	is performed on the identity matrix of size n.
+	opst is row op string. ex "R2*-3", "R2sR3", "R2 - 3/2R3". no spaces necessary'''
     opst = RowOp(str(opst))
-    a,b,c = opst.tuple()
-    return Elementary2(n,opst.op,a,b,c)
+    return Elementary2(n,opst.op,*opst.tuple())
 
-E3 = Elementary3
 
 class RowOp:
-    def __init__(self,opst):
-        '''opst is row op string. 
-		Examples: 
-		"R2*-3" -> multiply each entry in row to by constant -3 
-		"R2sR3" -> switch rows 2 and 3
-		"R2 - 3/2R3" -> add -3/2 of each entry in row 3 to row 2
-		spaces in format are optional'''
-		
+    '''Holds details about an elementary row operation to be
+    performed on a matrix.
+    These are descriptions corresponding to op numbers:
+    0 - Swap: two row numbers to indicate these rows to be interchanged  (r1,r2) r1 <-> r2
+    1 - Scale: a target row, then a constant to multiply that row by (r1,c) r1 <- r1*c
+    2 - Pivot: a row number, a another row number, then a constant to
+    add constant * second row to first (r1,r2,c)  r1 <- r1 + c*r2'''
+    
+    def __init__(self, *args):
+        '''args can be opst which is row op string. 
+        Examples: 
+        "R2*-3" -> multiply each entry in row to by constant -3 
+        "R2sR3" -> switch rows 2 and 3
+        "R2 - 3/2R3" -> add -3/2 of each entry in row 3 to row 2
+        spaces in format are optional
+        args can be op number (0-2), then r1,c or r1,r2 or r1,r2,c based on the number'''
+        if len(args) == 1:
+            self.init_opst(args[0])
+        else:
+            args += (0,)
+            self.op = op = args[0]
+            self.r1 = args[1]
+            self.r2,self.c = [(args[2],1), (None,args[2]), (args[2],args[3])][op]
+            # assign self.opst
+            self.reconstruct()
+
+    def init_opst(self,opst):		
         self.opst = opst
-        self.op = op = ['*' in opst, 's' in opst, '*' not in opst and 's' not in opst].index(True)
+        self.op = op = ['s' in opst, '*' in opst, '*' not in opst and 's' not in opst].index(True)
         
         opst = opst.replace(' ','')
         r1,r2,c = None,None,0
+
         if op == 0:
+            r1,r2 = map(int,opst.replace('R','').split('s'))
+        if op == 1:
             r1,c = opst[1:].split('*')
             r1 = int(r1)
             if '/' in c:
@@ -289,8 +304,6 @@ class RowOp:
                 c = Frac(a,b)
             else:
                 c = int(c)
-        if op == 1:
-            r1,r2 = map(int,opst.replace('R','').split('s'))
         if op == 2:
             pm = '+-'[int('-' in opst)]
             r1 = int(opst[1:opst.find(pm)])
@@ -301,26 +314,28 @@ class RowOp:
                 c = Frac(a,b)
             else:
                 c = int(c+('1' if len(c)==1 else ''))
-        self.r1 = r1
-        self.r2 = r2
+        self.r1 = r1 - 1
+        self.r2 = (None if not r2 else r2 - 1)
         self.c = c
         self.reconstruct()
+        
     def __repr__(self):
         return self.opst
     
     def reconstruct(self):
         '''sets self.opst based on op,r1,r2,c values'''
         pm = "+-"[int(self.c < 0)]
-        self.opst = [f"R{self.r1} * {self.c}", f"R{self.r1}sR{self.r2}", f"R{self.r1} {pm} {abs(self.c)}R{self.r2}"][self.op]
+        r1,r2 = self.r1+1, (None if not self.r2 else self.r2+1)
+        self.opst = [f"R{r1}sR{r2}", f"R{r1} * {self.c}", f"R{r1} {pm} {abs(self.c)}R{r2}"][self.op]
 
     def tuple(self):
         '''return op as tuple of form (r1,c,None), (r1,r2,None), or (r1,r2,c) based on self.op'''
-        return [(self.r1,self.c,None), (self.r1,self.r2,None), (self.r1,self.r2,self.c)][self.op]
+        return [(self.r1,self.r2,None), (self.r1,self.c,None), (self.r1,self.r2,self.c)][self.op]
 
     def invert(self):
         '''Return the inverse row operation string of self'''
         opst = RowOp(self.opst)
-        if opst.op == 0: opst.c = Frac(1,opst.c)
+        if opst.op == 1: opst.c = Frac(1,opst.c)
         if opst.op == 2: opst.c = -opst.c
         opst.reconstruct()
         return opst
