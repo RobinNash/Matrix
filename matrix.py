@@ -322,20 +322,80 @@ class RowOp:
         opst.reconstruct()
         return opst
 
-class Vector(Matrix):
+class Vector(list):
+    def __init__(self, vector):
+        # cast Vector to str
+        if type(vector) == str:
+            vector = list(map(Frac,vector.split()))
+        # convert matrix of 1 col to vector
+        if isinstance(vector[0], list):
+            if len(vector[0]) == 1: vector = [row[0] for row in vector]
+            else: vector = vector[0] # would be a matrix with one row
+        super().__init__(vector)
+
+    def __repr__(self):
+        return str([str(c) for c in self]).replace("'",'')
+    def __neg__(self):
+        '''return -self'''
+        return -1*self
+    def __mul__(self, value):
+        '''return self*value. value is a constant'''
+        return Vector([a*value for a in self])
+    def __rmul__(self, value):
+        '''return value*self. value is a constant'''
+        return Vector([a*value for a in self])
+    def __add__(self, vector):
+        '''return self+vector'''
+        return Vector([self[i]+vector[i] for i in range(len(self))])
+    def __sub__(self, vector):
+        '''return self - vector'''
+        return self + -1*vector
+##    def __setitem__(self, key, value):
+##        '''set self[key] to value'''
+##        self[key] = Frac(value)
     def norm(self):
         '''return the norm (length) of self'''
-        return sum([v**2 for v in self[0]])**0.5
+        return sqrt(self.normsq())
+    def normsq(self):
+        '''return the norm^2 of self'''
+        return sum([v**2 for v in self])
+    def unit(self):
+        '''return unit vector of self'''
+        return (1/self.norm())*self
+
     def dot(self,vector):
         '''return dot product of self and vector'''
-        return (self*vector.T())[0][0]
+        return sum([self[i]*vector[i] for i in range(len(self))])	
     def angle(self,vector):
         '''return angle between two vectors in radians'''
         return acos( self.dot(vector) / (self.norm()*vector.norm()) )
     def dangle(self,vector):
         '''return angle between self and vector in degrees'''
         return degrees(self.angle(vector))
-
+	
+    def cross(self,vector):
+        '''return self x vector'''
+        M = Matrix([self,vector])
+        return Vector([M.remove_col(0).det(),-M.remove_col(1).det(),M.remove_col(2).det()])
+    def lagrange(self,vector):
+        '''return length of self cross vector using lagrange identity'''
+        return sqrt( self.norm()**2 * vector.norm()**2 - self.dot(vector)**2 )
+	
+    def proj_len(self, vector):
+        ''''return the length of the projection of self onto vector; proj vector self'''
+        return (self.dot(vector)/vector.norm())#Frac(self.dot(a),a.norm())
+    def proj(self,vector):
+        '''return projection of self onto vector; proj vector self'''
+        return Vector([Frac(self.dot(vector),vector.normsq())*c for c in vector])
+    
+    def col(self):
+        '''return self as a column matrix'''
+        return Matrix([[a] for a in self])
+    def row(self):
+        '''return self as a row matrix'''
+        return Matrix([self])
+	
+	
 def mul_list(matrices):
     '''multiply each matrix in order'''
     M = matrices[0]
