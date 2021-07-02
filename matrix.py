@@ -93,10 +93,13 @@ class Matrix(list):
             for i in range(value-1):
                 M = M*self
         return M
-    
+	
     def print(self):
         '''display formatted matrix to console'''
-        print(str(self).replace('], [',']\n ['))#.replace(',',''))
+        # holds format specifier for each column of self
+        form = [max([len(str(self[i][j])) for i in range(self.m)]) for j in range(self.n)]
+        M = [[f"{str(self[i][j]):>{form[j]}s}" for j in range(self.n)] for i in range(self.m)]
+        print(str(M).replace('], [',']\n [').replace("'",''))#.replace(',',''))
 
     def copy(self):
         ''' Return a 2 level copy of self'''
