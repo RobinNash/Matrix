@@ -41,7 +41,7 @@ v = Vector('1 2 3')
   - Includes lots of vector operations like cross product, dot product, norm
   - Includes `.proj(vector)` which returns the projection of the current vector on another vector
 - RowOp
-  - This class converts an elementary row operation string like `"R1 * 3", "R2sR3", "R1 - 3/2R3"` into numbers that can be used by Matrix to perform the row operation
-  - `.invert()` function returns the inverted version of the operation string. Ex. `"R1 * 3" -> "R1 * 1/3"`
+  - This class converts an elementary row operation string like `"R1 * 3"`, `"R2sR3"`, or `"R1 - 3/2R3"` into values that can be used by Matrix to perform the row operation
+  - `.invert()` function returns the inverted version of the operation string. Ex. `"R1 * 3" -> "R1 * 1/3"`  
 ## License
 [MIT](https://choosealicense.com/licenses/mit/)
