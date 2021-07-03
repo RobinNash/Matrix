@@ -1,12 +1,12 @@
 # Matrix
 This repository holds a Python modules matrix.py. This module allows users to create matrix objects, perform matrix and vector operations, and easily perform elementary row operations on a matrix. This module is great for applications in linear algebra.
 
-The Matrix class holds data of a matrix and can perform matrix operations.
-The Vector class holds data of a Vector and can perform vector operations.
-The RowOp class exists to store data on a elementary row operation. It can be represented by a readable string or data values.
+The Matrix class holds data of a matrix and can perform matrix operations.  
+The Vector class holds data of a Vector and can perform vector operations.  
+The RowOp class exists to store data on a elementary row operation. It can be represented by a readable string or data values.  
 
 ## How to Use
-To create a Matrix object, cast Matrix to a 2D list.
+To create a Matrix object, cast Matrix to a 2D list or a string.
 For example, the 2x3 matix:
 ```
 1 2 3
