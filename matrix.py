@@ -146,7 +146,7 @@ class Matrix(list):
         '''Return transpose of self'''
         return Matrix([[self[j][i] for j in range(len(self))] for i in range(len(self[0]))])
 
-    def REF(self, get_row_ops = False, show_steps = False):
+    def REF(self, get_row_ops = False):
         '''Return self in a row echelon form'''
         # Sort rows by least amount of leading zeros
         def leading_zeros(row,n):
@@ -168,21 +168,18 @@ class Matrix(list):
                 if M[r2][lead] == 0:
                     break
                 lead2 = leading_zeros(M[r2],0)
-                M[r2][lead2]
                 M = M.pivot(r2,r,-M[r2][lead2])
-            #print some steps
-            if show_steps: M.print()
             # Sort the below by leading zeros again
             M = get_sort(M,r+1)
 
         return M
 
-    def RREF(self, show_steps = False):
+    def RREF(self):
         '''return self in reduced row echelon form'''
         def leading_zeros(row,n):
             return n if row==[] or row[0]!=0 else leading_zeros(row[1:],n+1)
         # put it in REF
-        M = self.REF(show_steps=show_steps)
+        M = self.REF()
         
         leads = [leading_zeros(row,0) for row in M]
         for r in range(M.m):
@@ -190,8 +187,6 @@ class Matrix(list):
                 if c in leads:
                     r2 = leads.index(c)
                     M = M.pivot(r,r2, Frac(-M[r][c],M[r2][c]))
-            #print some steps
-            if show_steps: M.print()
         return M
         
         
@@ -278,7 +273,10 @@ class RowOp:
         spaces in format are optional
         args can be op number (0-2), then r1,c or r1,r2 or r1,r2,c based on the number'''
         if len(args) == 1:
-            self.init_opst(args[0])
+            if type(args[0]) == str:
+                self.init_opst(args[0])
+            elif type(args[0]) == RowOp:
+                self.init_opst(args[0].opst)
         else:
             args += (0,)
             self.op = op = args[0]
@@ -289,7 +287,7 @@ class RowOp:
 
     def init_opst(self,opst):		
         self.opst = opst
-        self.op = op = ['s' in opst, '*' in opst, '*' not in opst and 's' not in opst].index(True)
+        self.op = op = ['s' in opst, '*' in opst, True].index(True)
         
         opst = opst.replace(' ','')
         r1,r2,c = None,None,0
