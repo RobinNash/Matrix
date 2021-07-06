@@ -146,14 +146,29 @@ class Matrix(list):
         '''Return transpose of self'''
         return Matrix([[self[j][i] for j in range(len(self))] for i in range(len(self[0]))])
 
+
     def REF(self, get_row_ops = False):
-        '''Return self in a row echelon form'''
+        '''Return self in a row echelon form, and the list of row operations that reduce it
+		if get_row_ops = True.'''
         # Sort rows by least amount of leading zeros
         def leading_zeros(row,n):
+            '''return the number of leading zeros in a list/Vector'''
             return n if row==[] or row[0]!=0 else leading_zeros(row[1:],n+1)
-        def get_sort(M,start=0):
-            return Matrix(M[:start] + sorted(M[start:],key = lambda row: leading_zeros(row,0)))
-        M = get_sort(self)
+        def get_sort(M,start=0, ops = []):
+            '''return M (with rows sorted by number of leading zeros) and row ops'''
+            if start == M.m:
+                return (M, ops)
+            M = M.copy()
+            leads = [leading_zeros(row,0) for row in M]
+            r2 = leads.index(min(leads[start+1:]+[leads[start]]),start)
+            if r2 != start:
+                M[start],M[r2] = M[r2],M[start]
+                ops.append(RowOp(0,start,r2))
+            return get_sort(M, start+1, ops)
+        
+##            return Matrix(M[:start] + sorted(M[start:],key = lambda row: leading_zeros(row,0))) # if row_ops not involved
+        
+        M, row_ops = get_sort(self)
 
         for r in range(M.m):
             lead = leading_zeros(M[r],0) #where the current row's leading 1 will be
@@ -162,32 +177,39 @@ class Matrix(list):
                 break
             # Transform row so lead is 1
             if M[r][lead] != 1:
+                row_ops.append(RowOp(1,r,Frac(1,M[r][lead])))
                 M = M.scale(r,Frac(1,M[r][lead]))
             # Remove entries below
             for r2 in range(r+1,M.m):
                 if M[r2][lead] == 0:
                     break
                 lead2 = leading_zeros(M[r2],0)
+                row_ops.append(RowOp(2,r2,r,-M[r2][lead2]))
                 M = M.pivot(r2,r,-M[r2][lead2])
+                
             # Sort the below by leading zeros again
-            M = get_sort(M,r+1)
+            M,row_ops = get_sort(M,r+1, row_ops)
 
-        return M
+        return M if not get_row_ops else (M, row_ops)
 
-    def RREF(self):
-        '''return self in reduced row echelon form'''
+    def RREF(self, get_row_ops = False):
+        '''return self in reduced row echelon form, and the list of row operations that reduce it
+		if get_row_ops = True'''
         def leading_zeros(row,n):
             return n if row==[] or row[0]!=0 else leading_zeros(row[1:],n+1)
         # put it in REF
-        M = self.REF()
+        M, row_ops = self.REF(True)
         
         leads = [leading_zeros(row,0) for row in M]
         for r in range(M.m):
             for c in range(leads[r]+1,M.n):
                 if c in leads:
                     r2 = leads.index(c)
+                    row_ops.append(RowOp(2,r,r2, Frac(-M[r][c],M[r2][c])))
                     M = M.pivot(r,r2, Frac(-M[r][c],M[r2][c]))
-        return M
+
+        return M if not get_row_ops else (M, row_ops)
+        
         
         
     def tr(self):
@@ -256,8 +278,7 @@ def ElementaryOpst(n, opst):
 
 
 class RowOp:
-    '''Holds details about an elementary row operation to be
-    performed on a matrix.
+    '''Holds details about an elementary row operation to be performed on a matrix.
     These are descriptions corresponding to op numbers:
     0 - Swap: two row numbers to indicate these rows to be interchanged  (r1,r2) r1 <-> r2
     1 - Scale: a target row, then a constant to multiply that row by (r1,c) r1 <- r1*c
@@ -323,7 +344,7 @@ class RowOp:
     def reconstruct(self):
         '''sets self.opst based on op,r1,r2,c values'''
         pm = "+-"[int(self.c < 0)]
-        r1,r2 = self.r1+1, (None if not self.r2 else self.r2+1)
+        r1,r2 = self.r1+1, (None if self.r2 == None else self.r2+1)
         self.opst = [f"R{r1}sR{r2}", f"R{r1} * {self.c}", f"R{r1} {pm} {abs(self.c)}R{r2}"][self.op]
 
     def tuple(self):
