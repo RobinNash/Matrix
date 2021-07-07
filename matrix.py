@@ -432,13 +432,20 @@ class Vector(list):
         '''return self as a row matrix'''
         return Matrix([self])
 	
-	
 def mul_list(matrices):
     '''multiply each matrix in order'''
-    M = matrices[0]
+    M = matrices[0].copy()
     for E in matrices[1:]:
         M = M*E
     return M
+
+def apply_ops(M, row_ops):
+    '''return a matrix where a list of RowOps or opst are applied to M in order'''
+    M = M.copy()
+    for op in row_ops:
+        M = M.row_op(op)
+    return M
+  
   
 if __name__ == "__main__":
 
