@@ -25,3 +25,15 @@ optests = ["R2+R1","R1sR3","R3*-2"]
 for opst in optests:
     A.row_op(opst).print()
     print()
+
+    
+
+# test if Row Ops from RREF work
+# and test apply_ops function
+
+A.RREF().print()
+
+M, row_ops = A.RREF(True)
+print(row_ops)
+apply_ops(A, row_ops).print()
+
