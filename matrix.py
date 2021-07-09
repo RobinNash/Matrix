@@ -28,7 +28,7 @@ def datan(x): return degrees(atan(x))
 
 class Matrix(list):
     '''2D matrix object
-    simplements matrix operations and functions
+    implements matrix operations and functions
     Matrix can be initialized by passing a 2D array
     or a string of form "a b c\nd e f" where a-c are entries of
     first row and d-f are entries of second row
@@ -104,6 +104,7 @@ class Matrix(list):
     def copy(self):
         ''' Return a 2 level copy of self'''
         return Matrix([Matrix([x for x in row]) for row in self])
+	
     def is_same_size(self, matrix):
 	'''return if self has the same number of rows and columns as matrix'''
         return self.mn() == matrix.mn()
